@@ -81,6 +81,10 @@ def directory():
 
 # API
 
+@app.route('/api')
+def route_api():
+	return render_template('api.html')
+
 @app.route('/api/me', methods=['GET', 'POST'])
 def api_me():
 	user = ensure_session_user()
