@@ -31,15 +31,6 @@ else:
 connection = Connection(mongodb_uri)
 db = connection[db_name]
 
-def get_session_user():
-	return session.get('user')
-
-def get_session_email():
-	userinfo = get_session_user()
-	if not userinfo:
-		return None
-	return str(userinfo['id']) + '@' + str(userinfo['domain'])
-
 def get_session_name():
 	email = get_session_email()
 	if not email:
@@ -106,8 +97,17 @@ def api_me():
 def api_people():
 	return jsonify(people=[db_user_json(user) for user in db.users.find().sort('name', 1)])
 
-# Fwol.in Authentication
+# Authentication
 # ----------------------
+
+def get_session_user():
+	return session.get('user')
+
+def get_session_email():
+	userinfo = get_session_user()
+	if not userinfo:
+		return None
+	return str(userinfo['id']) + '@' + str(userinfo['domain'])
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
