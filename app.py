@@ -1,228 +1,154 @@
-import os, bcrypt, uuid, time, requests
+import os, random, string, requests, json, re, time
+import hashlib, requests, json, time, os, re, urllib
 from urlparse import urlparse
-from flask import Flask, send_from_directory, jsonify, session, request, redirect, render_template
+
+from flask import Flask, session, request, redirect, url_for, render_template, jsonify, Response
+app = Flask(__name__, static_url_path='')
+Flask.secret_key = os.environ.get('FLASK_SESSION_KEY', os.environ.get('SECRET_KEY', 'test-key-please-ignore'))
+
+PORT = int(os.environ.get('PORT', 5000))
+if 'PORT' in os.environ:
+	HOSTNAME = 'directory.olinapps.com'
+	HOST = 'directory.olinapps.com'
+else:
+	HOSTNAME = 'localhost'
+	HOST = 'localhost:5000'
+
+# Mongo
+# -----------
+
 from pymongo import Connection, ASCENDING, DESCENDING
 from bson.code import Code
 from bson.objectid import ObjectId
 
-#
-# Database
-#
+if os.environ.has_key('MONGOLAB_URI'):
+	mongodb_uri = os.environ['MONGOLAB_URI']
+	db_name = 'heroku_app9884622'
+else:
+	mongodb_uri = "mongodb://localhost:27017/"
+	db_name = 'olinapps-directory'
 
-from urlparse import urlsplit
-MONGO_URL = os.getenv('MONGOLAB_URI', 'mongodb://localhost:27017/olinapps-auth')
-parsed_mongo = urlsplit(MONGO_URL)
-db_name = parsed_mongo.path[1:]
-# Get db connection.
-print('Connecting to %s [db %s]' % (MONGO_URL, db_name))
-db = Connection(MONGO_URL)[db_name]
-# Authenticate.
-if '@' in MONGO_URL:
-    user_pass = parsed_mongo.netloc.split('@')[0].split(':')
-    db.authenticate(user_pass[0], user_pass[1])
-
-#
-# Passwords
-#
-
-def hash_password(password):
-  # Hash a password for the first time, with a randomly-generated salt
-  return bcrypt.hashpw(password, bcrypt.gensalt())
-
-def match_password(password, hashed):
-  return bcrypt.hashpw(password, hashed) == hashed
-
-
-#
-# Server
-#
-
-"""
-On reset, we check if the username is a proxy name or not.
-"""
-
-app = Flask(__name__)
-app.secret_key = 'https://ia600808.us.archive.org/27/items/FoundryAndOlinPresentationByMichaelMoody/'
-
-def email_local_part(email):
-  return email.split('@')[0]
-
-def email_domain_part(email):
-  return email.split('@')[1]
-
-MAILGUN_KEY = os.getenv('MAILGUN_API_KEY')
-MAILGUN_URL = "https://api.mailgun.net/v2/olinapps.mailgun.org"
-
-def reset_password(user):
-  # Update user reset token
-  token = str(uuid.uuid1())
-  user['resettoken'] = token
-  db.users.update({"_id": user['_id']}, user)
-
-  r = requests.post(MAILGUN_URL + "/messages", auth=("api", MAILGUN_KEY), data={
-    "from": "no-reply@olinapps.mailgun.org",
-    "to": user['_id'] + '@' + user['domain'],
-    "subject": "Olin Apps Password Reset",
-    "text": "Please reset your password by following this link:\n\nhttp://olinapps.com/reset?token=" + token
-    })
-
-def ensure_user(email):
-  try:
-    user = db.users.find_one({
-      "_id": email_local_part(email)
-      })
-    if not user:
-      user = {
-        "_id": email_local_part(email),
-        "domain": email_domain_part(email),
-        "password": None,
-        "created": int(time.time()),
-        "resettoken": None,
-        "session": None
-        }
-      db.users.insert(user)
-    return user
-  except Exception:
-    return None
-
-def generate_session(user):
-  # Session ID.
-  if not user.get('sessionid'):
-    user['sessionid'] = str(uuid.uuid1())
-    db.users.update({"_id": user['_id']}, user)
-  session['sessionid'] = user['sessionid']
+connection = Connection(mongodb_uri)
+db = connection[db_name]
 
 def get_session_user():
-  if 'sessionid' not in session and not request.args.get('sessionid'):
-    return None
-  return db.users.find_one({
-    "sessionid": session.get('sessionid') or request.args.get('sessionid')
-    })
+	return session.get('user')
 
-@app.route('/reset', methods=['GET', 'POST'])
-def route_reset():
-  user = db.users.find_one({
-    "resettoken": request.args.get('token')
-    })
-  if not request.args.get('token') or not user:
-    if request.method == 'GET':
-      return render_template('reset.html')
-    else:
-      reset_password(ensure_user(request.form.get('email')))
-      return render_template('reset_sent.html')
+def get_session_email():
+	userinfo = get_session_user()
+	if not userinfo:
+		return None
+	return str(userinfo['id']) + '@' + str(userinfo['domain'])
 
-  if request.args.get('token') and request.method == 'GET':
-    return render_template('reset_pass.html', user=user)
+def get_session_name():
+	email = get_session_email()
+	if not email:
+		return None
+	user = db.users.find_one(dict(email=email))
+	if user:
+		return user['nickname'] or user['name']
+	return email.split('@', 1)[0].replace('.', ' ').title()
 
-  password = request.form.get('password', '')
-  if len(password) < 8:
-    return render_template('reset_pass.html',
-      user=user,
-      message="Password must be at least eight characters long.")
+def ensure_session_user():
+	email = get_session_email()
+	if not email:
+		return None
+	if not db.users.find_one(dict(email=email)):
+		db.users.insert(dict(
+			email=str(userinfo.id) + '@' + str(userinfo.domain),
+			name=get_session_name(),
+			nickname='',
+			room='',
+			avatar='',
+			phone='',
+			year=''
+		))
+	return db.users.find_one(dict(email=session['email']))
 
-  # Update user
-  user['password'] = hash_password(password)
-  user['resettoken'] = None
-  db.users.update({"_id": user['_id']}, user)
-  generate_session(user)
+USER_KEYS = ['name', 'nickname', 'room', 'avatar', 'year', 'phone', 'mail',
+	'twitter', 'facebook', 'tumblr', 'skype', 'pinterest', 'lastfm', 'google',
+	'preferredemail'];
 
-  return redirect('/')
+def db_user_json(user):
+	json = dict(id=str(user['_id']), email=user['email']);
+	for key in USER_KEYS:
+		json[key] = user.get(key, '')
+	json['domain'] = user['email'].split('@', 1)[1]
+	return json
+
+# Routes
+# ------
 
 @app.route('/')
-def route_index():
-  user = get_session_user()
-  return render_template('index.html',
-    external=request.args.get('external'),
-    user=user)
+def directory():
+	user = ensure_session_user()
+	return render_template('directory.html',
+		email=session.get('email', None),
+		name=get_session_name(),
+		user=db_user_json(ensure_session_user()),
+		people=[db_user_json(user) for user in db.users.find().sort('name', 1)])
 
-@app.route('/api')
-def route_api():
-  user = get_session_user()
-  return render_template('api.html',
-    user=user)
-
-@app.route('/api/me')
-def route_api_me():
-  user = get_session_user()
-  if user:
-    return jsonify(error=False, user={
-      "domain": user['domain'],
-      "id": user['_id'],
-      "created": user['created']
-      })
-  else:
-    return jsonify(error=True)
-
-@app.route('/external')
-def route_external():
-  user = get_session_user()
-  if True:
-    return render_template('external.html',
-      external=request.args.get('callback'),
-      sessionid=session['sessionid'])
-  else:
-    return redirect('/?external=%s' % request.args.get('callback'))
+# Login/out
 
 @app.route('/login', methods=['GET', 'POST'])
-def route_login():
-  if request.method == 'GET':
-    user = get_session_user()
-    return render_template('login.html',
-      external=request.args.get('external'),
-      user=user)
-  # Normalize username.
-  else:
-    username = request.form.get('email')
-    if not username:
-      return render_template('login.html',
-        external=request.args.get('external'),
-        message="Please enter an email address.")
+def login():
+	if request.method == 'POST':
+		# External login.
+		if request.form.has_key('sessionid'):
+			sessionid = request.form.get('sessionid')
+			r = requests.get('http://olinapps.com/api/me', params={"sessionid": sessionid})
+			if r.status_code == 200 and r.json and r.json.has_key('user'):
+				session['sessionid'] = sessionid
+				session['user'] = r.json['user']
+				return redirect('/')
+			else:
+				session.pop('sessionid', None)
+				return "Invalid session token: %s" % sessionid
+	return "Please authenticate with Olin Apps to view Directory."
 
-  # Check for canonical emails.
-  if email_domain_part(username) not in ['olin.edu', 'students.olin.edu', 'alumni.olin.edu']:
-    return render_template('login.html',
-      external=request.args.get('external'),
-      message="Not a valid olin.edu email address.",
-      email=username)
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+	session.pop('sessionid', None)
+	session.pop('user', None)
+	return redirect('/')
 
-  # Lookup user.
-  user = ensure_user(username)
+# API
 
-  # Reset or match password.
-  if not user['password']:
-    reset_password(user)
-    return render_template('reset_sent.html')
-  if not match_password(request.form.get('password'), user['password']):
-    return render_template('login.html',
-      external=request.args.get('external'),
-      message="No such user or invalid password.",
-      email=username)
+@app.route('/api/me', methods=['GET', 'POST'])
+def api_me():
+	user = ensure_session_user()
+	if request.method == 'POST':
+		for key in USER_KEYS:
+			if request.form.has_key(key):
+				user[key] = request.form[key]
+		db.users.update({"_id": user['_id']}, user)
+		return redirect('/')
 
-  generate_session(user)
+	return jsonify(**db_user_json(user))
 
-  #if request.args.get('callback') and 'external' in request.args:
-  #  return redirect(request.args.get('callback') + '?sessionid=' + session['sessionid'])
+@app.route('/api/people')
+def api_people():
+	return jsonify(people=[db_user_json(user) for user in db.users.find().sort('name', 1)])
 
-  if request.args.get('external'):
-    return redirect('/external?%s' % request.args.get('external'))
-  return redirect('/')
+# Fwol.in Authentication
+# ----------------------
 
-@app.route('/logout', methods=['POST'])
-def route_logout():
-  user = get_session_user()
-  if user:
-    user.pop('sessionid', None)
-    db.users.update({"_id": user['_id']}, user)
-  session.pop('sessionid', None)
-  return redirect('/')
+def fwolin_unauthed():
+	if request.path.startswith('/api/'):
+		return Response(json.dumps({"error": "Unauthorized"}), 401, {'Content-Type': 'application/json'})
+	else:
+		return redirect('/login/')
 
+# All pages are accessible, but enable user accounts.
+@app.before_request
+def before_request():
+	if not get_session_user() and urlparse(request.url).path != '/login':
+		return redirect('http://olinapps.com/external?callback=http://%s/login' % HOST)
 
-#
 # Launch
-#
+# ------
 
 if __name__ == '__main__':
-    # Bind to PORT if defined, otherwise default to 5000.
-    port = int(os.environ.get('PORT', 5000))
-    app.debug = True
-    app.run(host='0.0.0.0', port=port)
+	# Bind to PORT if defined, otherwise default to 5000.
+	app.debug = True
+	app.run(host=HOSTNAME, port=PORT)

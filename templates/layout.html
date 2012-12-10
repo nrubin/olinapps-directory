@@ -1,39 +1,136 @@
 <!DOCTYPE html>
 
-<html>
-  <head>
-    <title>Olin Apps</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/css/bootstrap-combined.min.css" rel="stylesheet">
-    <link href="/static/style.css" rel="stylesheet">
-  </head>
-  <body>
-    <header>
-      <ul id="olinstar">
-        <li class="apps"><a href="//olinapps.com/">olin<b>apps</b>.com</a></li>
-        <li class="students"><a href="//olinstudents.com/">olin<b>students</b>.com</a></li>
-        <li class="clubs"><a href="//olinclubs.com/">olin<b>clubs</b>.com</a></li>
-        <li class="projects"><a href="//olinprojects.com/">olin<b>projects</b>.com</a></li>
-      </ul>
-    </header>
+<html lang="en"> 
+<head>
+<title>Olin Online | fwol.in</title> 
 
-    <div class="container-fluid">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" >
 
-      {% if user %}
-        <div id="login">You are logged in as <code>{{user._id}}</code>.
-          <form action="/logout" method="post">
-            <button class="btn btn-danger btn-mini">Logout</button>
-          </form>
-        </div>
-      {% else %}
-        <div id="login">
-          <a href="/login" class="btn btn-success btn-mini">Login to Olin Apps</a>
-        </div>
-      {% endif %}
-      <h1><a href="/">Olin Apps</a></h1>
-      <div id="body">
-        {% block body %}{% endblock %}
-      </div>
-    </div>
-  </body>
-</html>
+<link rel="shortcut icon" href="/css/rocket.png"> 
+<link rel="stylesheet" href="/css/bootstrap.css">
+<link rel="stylesheet" href="/css/bootstrap-responsive.css">
+<link rel="stylesheet" href="/css/bootstrap-lightbox.css">
+
+<script src="https://login.persona.org/include.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script> 
+<script src="/scripts/bootstrap.js"></script>
+<script src="/scripts/bootstrap-lightbox.js"></script>
+
+<style>
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Tahoma, Arial, sans-serif; background: #ddd; color: #444;
+  padding: 0;
+}
+
+#content-wrapper {  height: 100%; }
+#content { display: block; border: none; width: 100%; height: 100%; }
+
+.well { padding: 8px 0; margin-top: 20px; }
+#nav li {height: 36px; }
+#nav a { line-height: 24px; }
+#nav img { width: 24px; margin-right: 10px; }
+
+/*
+ * page
+ */
+
+#header { border-bottom: 1px solid #999; margin: 0 0 0; padding: 15px 0 0 20px; background: #eee; overflow: auto; height: 55px; }
+#header h1 { font-size: 30px; float: left; margin: 0 20px 0 0; padding: 0; text-shadow: #fff 1px 1px 0; }
+#header-controls { float: right; margin: 5px 20px 0 0; }
+
+@media all and (min-width: 500px) {
+  #header { position: fixed; width: 100%; }
+  #header-inner { margin-right: 15px; }
+  .container-fluid { padding-top: 90px; }
+}
+@media all and (max-width: 499px) { 
+  #header { height: auto; min-height: 55px; }
+  #header h1 { font-size: 24px; }
+  #header-controls { display: none; }
+}
+</style>
+
+<script>
+
+var isMobile = /mobi/i.test(navigator.userAgent);
+
+// http://remysharp.com/2010/08/05/doing-it-right-skipping-the-iphone-url-bar/
+if (isMobile && !location.hash) {
+  setTimeout(function () {
+    if (!pageYOffset) {
+      window.scrollTo(0, 1);
+    }
+  }, 1000);
+}
+
+$(function () {
+	var signinLink = document.getElementById('signin');
+	if (signinLink) {
+	  signinLink.onclick = function() {
+      navigator.id.request(); return false;
+    };
+	};
+	 
+	var signoutLink = document.getElementById('signout');
+	if (signoutLink) {
+	  signoutLink.onclick = function() {
+      navigator.id.logout(); return false;
+    };
+	};
+});
+
+{% if email %}
+var currentUser = "{{ email }}";
+{% else %}
+var currentUser = null;
+{% endif %}
+
+navigator.id.watch({
+  loggedInUser: currentUser,
+  onlogin: function(assertion) {
+    // A user has logged in! Here you need to:
+    // 1. Send the assertion to your backend for verification and to create a session.
+    // 2. Update your UI.
+    if (currentUser) {
+      return navigator.id.logout();
+    }
+    $.ajax({ /* <-- This example uses jQuery, but you can use whatever you'd like */
+      type: 'POST',
+      url: '/login/', // This is a URL on your website.
+      data: {
+        assertion: assertion
+      },
+      success: function(res, status, xhr) {
+        window.location.reload();
+      },
+      error: function(res, status, xhr) {
+        alert("login failure" + res);
+      }
+    });
+  },
+  onlogout: function() {
+    $.ajax({ /* <-- This example uses jQuery, but you can use whatever you'd like */
+      type: 'POST',
+      url: '/logout/', // This is a URL on your website.
+      success: function(res, status, xhr) {
+        window.location.pathname = '/';
+      },
+      error: function(res, status, xhr) {
+        alert("logout failure" + res);
+      }
+    });
+  }
+});
+
+</script>
+</head>
+
+<body>
+
+<div id="content-wrapper">
+{% block content %}{% endblock %}
+</div>
+ 
+</body> 
+</html> 

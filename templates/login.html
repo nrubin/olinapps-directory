@@ -1,59 +1,87 @@
-{% extends "layout.html" %}
-{% block body %}
+<!DOCTYPE>
+<html>
+<title>fwol.in Login</title>
+<script src="https://login.persona.org/include.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script> 
+<script src="/scripts/bootstrap.js"></script>
+<style>
+html { background: #aaa; }
+#content { width: 440px; padding: 10px 30px; margin: 70px auto 0; font-family: Helvetica Neue, Helvetica, Arial, sans-serif; 
+font-size: 16px; line-height: 1.5; background: white; box-shadow: 5px 5px 0 #222;}
+p { margin: 20px 0; }
+#back { text-align: center; }
+#signin-p { text-align: center; }
+#signin { font-size: 26px; font-weight: bold; padding: 0.4em 2em; }
+#desc em { font-weight: bold; }
+</style>
+<body>
+<div id="content">
 
-  {% if not user %}
-  <h2>Login to Olin Apps</h2>
-  <p class="muted">Log in with your Olin email address ending in <i>@students.olin.edu</i>, <i>@alumni.olin.edu</i>, or <i>@olin.edu</i>. Make sure to use your full email, not an alias.</p>
+<p id="signin-p"><button id="signin" onclick="login()">Login to fwol.in</button></p>
+<p id="desc">Sign in using your <em>@students.olin.edu</em>, <em>@alumni.olin.edu</em>, or <em>@olin.edu</em> address.</p>
+<p id="back"><a href="http://fwol.in" id="backLink">&larr; Go back?</a></p>
 
-  {% if message %}
-  <div class="alert alert-error">{{ message }}</div>
-  {% endif %}
+<script>
+$(function () {
+  var signinLink = document.getElementById('signin');
+  if (signinLink) {
+    signinLink.onclick = function() {
+      navigator.id.request(); return false;
+    };
+  };
+   
+  var signoutLink = document.getElementById('signout');
+  if (signoutLink) {
+    signoutLink.onclick = function() {
+      navigator.id.logout(); return false;
+    };
+  };
+});
 
-  <form action="login{% if external %}?external={{ external }}{% endif %}" method="post"
-  class="form-horizontal">
-    <div class="control-group">
-      <label class="control-label" for="inputEmail">Email:</label>
-      <div class="controls">
-        <input name="email" type="text" id="inputEmail" placeholder="full.name@students.olin.edu" class="input-xlarge" value="{{ email }}">
-        <script>document.getElementById('inputEmail').focus()</script>
-      </div>
-    </div>
-    <div class="control-group">
-      <label class="control-label" for="inputPassword">Password:</label>
-      <div class="controls">
-        <input name="password" type="password" id="inputPassword" class="input-xlarge"> 
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-success">Log In</button> <small><a style="margin-left: 15px" href="/reset">Forgot your Olin Apps password?</a></small>
-    </div>
-    
-  </form>
+{% if email %}
+var currentUser = "{{ email }}";
+{% else %}
+var currentUser = null;
+{% endif %}
 
-  {% else %}
-  <h2>Account</h2>
+navigator.id.watch({
+  loggedInUser: currentUser,
+  onlogin: function(assertion) {
+    // A user has logged in! Here you need to:
+    // 1. Send the assertion to your backend for verification and to create a session.
+    // 2. Update your UI.
+    if (currentUser) {
+      return history.back();
+    }
+    $.ajax({ /* <-- This example uses jQuery, but you can use whatever you'd like */
+      type: 'POST',
+      url: '/login/', // This is a URL on your website.
+      data: {
+        assertion: assertion
+      },
+      success: function(res, status, xhr) {
+        window.location.reload();
+      },
+      error: function(res, status, xhr) {
+        alert("login failure" + res);
+      }
+    });
+  },
+  onlogout: function() {
+    $.ajax({ /* <-- This example uses jQuery, but you can use whatever you'd like */
+      type: 'POST',
+      url: '/logout/', // This is a URL on your website.
+      success: function(res, status, xhr) {
+        window.location.reload();
+      },
+      error: function(res, status, xhr) {
+        alert("logout failure" + res);
+      }
+    });
+  }
+});
 
-  <p>You are logged in as <code>{{ user._id }}</code>.</p>
-  <form method="post" action="/logout">
-    <button class="btn btn-danger">Logout</button>
-  </form>
-
-  <hr>
-
-  <h3>Authentication API</h3>
-
-  <p>To authenticate users on Olin Apps requires a unique session key.</p>
-
-  <ol>
-    <li><p><b>Web apps:</b> Redirect the user to <a href="http://auth.olinapps.com/external?callback=http://example.com/">http://auth.olinapps.com/external?callback=http://example.com/</a>. If the user approves the app, they are redirected to the callback URL as a <code>POST</code> request with the <code>sessionid=<em>&lt;unique-session-key&gt;</em></code> form value. If the user rejects the app, they are returned via <code>GET</code>.</p></li>
-
-    <!--
-    <li><p><b>Native/mobile apps:</b> POST <a href="https://ohack-auth.herokuapp.com/exchangelogin">https://ohack-auth.herokuapp.com/exchangelogin</a> with the user's network <code>username</code> and <code>password</code>. This call returns <code>401</code> if invalid, or <code>200</code> with a JSON body <code>{"sessionid": "<em>&lt;unique-uuid-key&gt;</em>"}</code>.</p></li>
-  -->
-    
-  </ol>
-
-  <p>Once authenticated, you can GET <a href="http://auth.olinapps.com/me">http://auth.olinapps.com/me?sessionid=<em>&lt;unique-session-key&gt;</em></a> to check that the user is logged in.</a>
-
-  {% endif %}
-{% endblock %}
+</script>
+</div>
+</body>
+</html>
