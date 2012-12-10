@@ -121,7 +121,7 @@ def get_session_email():
 def login():
 	if request.method == 'POST':
 		# External login.
-		if request.form.has_key('sessionid') and load_session(request.form.get('sessionid'))
+		if request.form.has_key('sessionid') and load_session(request.form.get('sessionid')):
 			return redirect('/')
 		else:
 			session.pop('sessionid', None)
@@ -137,7 +137,7 @@ def logout():
 # All pages are accessible, but enable user accounts.
 @app.before_request
 def before_request():
-	if urlparse(request.url).path != '/login':
+	if urlparse(request.url).path == '/login':
 		return
 	if not get_session_user():
 		if request.args.has_key('sessionid') and load_session(request.args.get('sessionid')):
