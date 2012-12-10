@@ -100,6 +100,14 @@ def api_people():
 # Authentication
 # ----------------------
 
+def load_session(sessionid):
+	r = requests.get('http://olinapps.com/api/me', params={"sessionid": sessionid})
+	if r.status_code == 200 and r.json and r.json.has_key('user'):
+		session['sessionid'] = sessionid
+		session['user'] = r.json['user']
+		return True
+	return False
+
 def get_session_user():
 	return session.get('user')
 
@@ -113,16 +121,11 @@ def get_session_email():
 def login():
 	if request.method == 'POST':
 		# External login.
-		if request.form.has_key('sessionid'):
-			sessionid = request.form.get('sessionid')
-			r = requests.get('http://olinapps.com/api/me', params={"sessionid": sessionid})
-			if r.status_code == 200 and r.json and r.json.has_key('user'):
-				session['sessionid'] = sessionid
-				session['user'] = r.json['user']
-				return redirect('/')
-			else:
-				session.pop('sessionid', None)
-				return "Invalid session token: %s" % sessionid
+		if request.form.has_key('sessionid') and load_session(request.form.get('sessionid'))
+			return redirect('/')
+		else:
+			session.pop('sessionid', None)
+			return "Invalid session token: %s" % sessionid
 	return "Please authenticate with Olin Apps to view Directory."
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -134,7 +137,11 @@ def logout():
 # All pages are accessible, but enable user accounts.
 @app.before_request
 def before_request():
-	if not get_session_user() and urlparse(request.url).path != '/login':
+	if urlparse(request.url).path != '/login':
+		return
+	if not get_session_user():
+		if request.args.has_key('sessionid') and load_session(request.args.get('sessionid')):
+			return
 		return redirect('http://olinapps.com/external?callback=http://%s/login' % HOST)
 
 # Launch
