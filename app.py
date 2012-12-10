@@ -55,7 +55,7 @@ def ensure_session_user():
 		return None
 	if not db.users.find_one(dict(email=email)):
 		db.users.insert(dict(
-			email=str(userinfo.id) + '@' + str(userinfo.domain),
+			email=email,
 			name=get_session_name(),
 			nickname='',
 			room='',
@@ -63,7 +63,7 @@ def ensure_session_user():
 			phone='',
 			year=''
 		))
-	return db.users.find_one(dict(email=session['email']))
+	return db.users.find_one(dict(email=email))
 
 USER_KEYS = ['name', 'nickname', 'room', 'avatar', 'year', 'phone', 'mail',
 	'twitter', 'facebook', 'tumblr', 'skype', 'pinterest', 'lastfm', 'google',
