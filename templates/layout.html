@@ -31,6 +31,24 @@ body {
 #nav img { width: 24px; margin-right: 10px; }
 
 /*
+ * olin*
+ */
+
+header { overflow: auto; font-size: 18px;
+  color: #aaa; border: none; background: #444; border-bottom: 1px solid #fff;
+  padding: 0 0; }
+#olinstar, #olinstar li { display: block; margin: 0; padding: 0; list-style: none; }
+#olinstar { overflow: auto; max-width: 700px; margin: 0 auto; }
+#olinstar a { text-decoration: none; color: inherit; padding: 10px; display: block; }
+#olinstar a:hover { color: white; background: #555; }
+#olinstar li { float: left; width: 25%; text-align: center; }
+#olinstar b { font-weight: normal; }
+#olinstar .apps b { color: #C26;}
+#olinstar .students b { color: #3AC;}
+#olinstar .clubs b { color: #3CA;}
+#olinstar .projects b { color: #F90;}
+
+/*
  * page
  */
 
@@ -38,10 +56,12 @@ body {
 #header h1 { font-size: 30px; float: left; margin: 0 20px 0 0; padding: 0; text-shadow: #fff 1px 1px 0; }
 #header-controls { float: right; margin: 5px 20px 0 0; }
 
+#header.affix { width: 100%; margin: 0; top: 0; }
+#header.affix #header-inner { margin-right: 20px; }
+
 @media all and (min-width: 500px) {
-  #header { position: fixed; width: 100%; }
-  #header-inner { margin-right: 15px; }
-  .container-fluid { padding-top: 90px; }
+  header { margin-bottom: 90px;}
+  #header { margin-top: -90px; margin-bottom: 20px; }
 }
 @media all and (max-width: 499px) { 
   #header { height: auto; min-height: 55px; }
@@ -126,6 +146,15 @@ navigator.id.watch({
 </head>
 
 <body>
+
+    <header>
+      <ul id="olinstar">
+        <li class="apps"><a href="//olinapps.com/">olin<b>apps</b>.com</a></li>
+        <li class="students"><a href="//olinstudents.com/">olin<b>students</b>.com</a></li>
+        <li class="clubs"><a href="//olinclubs.com/">olin<b>clubs</b>.com</a></li>
+        <li class="projects"><a href="//olinprojects.com/">olin<b>projects</b>.com</a></li>
+      </ul>
+    </header>
 
 <div id="content-wrapper">
 {% block content %}{% endblock %}
