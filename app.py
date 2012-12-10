@@ -88,7 +88,26 @@ def directory():
 		user=db_user_json(ensure_session_user()),
 		people=[db_user_json(user) for user in db.users.find().sort('name', 1)])
 
-# Login/out
+# API
+
+@app.route('/api/me', methods=['GET', 'POST'])
+def api_me():
+	user = ensure_session_user()
+	if request.method == 'POST':
+		for key in USER_KEYS:
+			if request.form.has_key(key):
+				user[key] = request.form[key]
+		db.users.update({"_id": user['_id']}, user)
+		return redirect('/')
+
+	return jsonify(**db_user_json(user))
+
+@app.route('/api/people')
+def api_people():
+	return jsonify(people=[db_user_json(user) for user in db.users.find().sort('name', 1)])
+
+# Fwol.in Authentication
+# ----------------------
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -111,33 +130,6 @@ def logout():
 	session.pop('sessionid', None)
 	session.pop('user', None)
 	return redirect('/')
-
-# API
-
-@app.route('/api/me', methods=['GET', 'POST'])
-def api_me():
-	user = ensure_session_user()
-	if request.method == 'POST':
-		for key in USER_KEYS:
-			if request.form.has_key(key):
-				user[key] = request.form[key]
-		db.users.update({"_id": user['_id']}, user)
-		return redirect('/')
-
-	return jsonify(**db_user_json(user))
-
-@app.route('/api/people')
-def api_people():
-	return jsonify(people=[db_user_json(user) for user in db.users.find().sort('name', 1)])
-
-# Fwol.in Authentication
-# ----------------------
-
-def fwolin_unauthed():
-	if request.path.startswith('/api/'):
-		return Response(json.dumps({"error": "Unauthorized"}), 401, {'Content-Type': 'application/json'})
-	else:
-		return redirect('/login/')
 
 # All pages are accessible, but enable user accounts.
 @app.before_request
