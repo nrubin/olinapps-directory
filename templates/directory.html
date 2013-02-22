@@ -63,8 +63,8 @@ $(function () {
 .container-fluid h2 { clear: both; margin: 0; padding: 15px 0 15px; font-size: 1.5em; line-height: inherit; }
 
 #person-list { overflow: auto; padding-bottom: 10px; }
-#person-list div.person { float: left; margin-bottom: 15px; margin-right: 12px; width: 380px; }
-#person-list div.person-inset { overflow: auto; box-shadow: #666 1px 1px 1px; width: 240px; float: left; background: #eee; padding: 6px 10px; height: 130px; }
+#person-list div.person { margin-bottom: 15px; }
+#person-list div.person-inset { overflow: auto; box-shadow: #666 1px 1px 1px; background: #eee; padding: 6px 10px; }
 #person-list h3 { margin: 5px 0 10px 0; font-size: 19px; line-height: 1.2; }
 #person-list p.description { clear: left; margin: 0; font-size: 12px;}
 #person-list p.description img { width: 20px; margin-top: 8px; }
@@ -98,25 +98,34 @@ $(function () {
  <div id="person-list"> 
 
 <h2 style="padding-top: 0">Current Students</h2>
+<div class="row-fluid">
 {% for person in people %}
-{% if person.domain == "students.olin.edu" %}
-{% include "directory_person.html" with context %}
-{% endif %}
+	{% if person.domain == "students.olin.edu" %}
+	{% if (loop.index0 % 3) == 0 and loop.index0 > 0%}</div><div class="row-fluid">{% endif %}
+	{% include "directory_person.html" with context %}
+	{% endif %}
 {% endfor %}
+</div>
 
 <h2>Alumni</h2>
+<div class="row-fluid">
 {% for person in people %}
-{% if person.domain == "alumni.olin.edu" %}
-{% include "directory_person.html" with context %}
-{% endif %}
+	{% if person.domain == "alumni.olin.edu" %}
+	{% if (loop.index0 % 3) == 0 and loop.index0 > 0%}</div><div class="row-fluid">{% endif %}
+	{% include "directory_person.html" with context %}
+	{% endif %}
 {% endfor %}
+</div>
 
 <h2>Faculty and Staff</h2>
+<div class="row-fluid">
 {% for person in people %}
-{% if person.domain == "olin.edu" %}
-{% include "directory_person.html" with context %}
-{% endif %}
+	{% if person.domain == "olin.edu" %}
+	{% if (loop.index0 % 3) == 0 and loop.index0 > 0%}</div><div class="row-fluid">{% endif %}
+	{% include "directory_person.html" with context %}
+	{% endif %}
 {% endfor %}
+</div>
 </div>
 </div>
 
@@ -127,7 +136,6 @@ $(function () {
 	    <h3>Update Your Profile</h3>
 	  </div>
 	  <div class="modal-body">
-	    Profile image: <input name="avatar" type="filepicker" value="{{ user.avatar }}" onchange="$(this).next('small').html(event.files[0] ? 'Image: ' + String(event.files[0].url).link(event.files[0].url) : 'No image selected.')"> <small>Headshots that show your face clearly are preferred.</small><br>
 			Name: <input type="text" name="nickname" value="{{ user.nickname }}"><br>
 			Location/Room: <input type="text" name="room" placeholder="WH000" value="{{ user.room }}"><br>
 			Preferred e-mail: <input type="text" name="preferredemail" value="{{ user.preferredemail or user.email }}"><br>

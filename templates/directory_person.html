@@ -1,4 +1,4 @@
-<div class="person">
+<div class="person span4">
 	<div class="person-image">
 		<img src="{{ person.avatar }}{% if person.avatar|truncate(26, True, '') == "https://www.filepicker.io/" %}/convert?w=200&amp;h=200{% endif %}" style="cursor:pointer" onclick="$(this).parent().next().lightbox()">
 	</div>

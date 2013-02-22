@@ -1,0 +1,25 @@
+<!DOCTYPE>
+
+<html>
+<h1>Testing CORS</h1>
+<script src="http://code.jquery.com/jquery.min.js"></script>
+<script>
+
+$.ajax({
+  type: 'GET',
+  url: 'http://map.olinapps.com/api/me',
+  crossDomain: true,
+  dataType: 'json',
+  xhrFields: {
+     withCredentials: true
+  },
+  success: function (json, _, req) {
+    console.log(json, req);
+  },
+  error: function (req) {
+    console.log('ERROR', req.status);
+  }
+});
+
+</script>
+</html>

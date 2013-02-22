@@ -56,7 +56,7 @@ def ensure_session_user():
 		))
 	return db.users.find_one(dict(email=email))
 
-USER_KEYS = ['name', 'nickname', 'room', 'avatar', 'year', 'phone', 'mail',
+USER_KEYS = ['name', 'nickname', 'room', 'year', 'phone', 'mail',
 	'twitter', 'facebook', 'tumblr', 'skype', 'pinterest', 'lastfm', 'google',
 	'preferredemail'];
 
@@ -146,7 +146,22 @@ def before_request():
 	if not get_session_user():
 		if request.args.has_key('sessionid') and load_session(request.args.get('sessionid')):
 			return
+		if urlparse(request.url).path.startswith('/api/'):
+			return Response(json.dumps({"error": "Not authorized"}), 401, {"Content-Type": "application/json"})
 		return redirect('http://olinapps.com/external?callback=http://%s/login' % HOST)
+
+@app.after_request
+def after_request(response):
+	if urlparse(request.url).path.startswith('/api/') and request.headers.get('Origin'):
+		remotehost = urlparse(request.headers.get('Origin')).netloc
+		if re.match(r'^localhost:[0-9]+$', remotehost) or re.match(r'^[^.]+\.olinapps\.com', remotehost):
+				response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin'))
+		response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin'))
+		response.headers.add('Access-Control-Allow-Methods', 'POST, GET, PUT, PATCH, DELETE, OPTIONS')
+		response.headers.add('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Cookie')
+		response.headers.add('Access-Control-Allow-Credentials', 'true')
+		response.headers.add('Access-Control-Max-Age', '1728000')
+	return response
 
 # Launch
 # ------

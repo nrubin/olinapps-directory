@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/css/bootstrap.css">
 <link rel="stylesheet" href="/css/bootstrap-responsive.css">
 <link rel="stylesheet" href="/css/bootstrap-lightbox.css">
+<link rel="stylesheet" href="http://olinapps.com/static/style.css">
 
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script> 
 <script src="/scripts/bootstrap.js"></script>
@@ -31,24 +32,6 @@ body {
 #nav img { width: 24px; margin-right: 10px; }
 
 /*
- * olin*
- */
-
-header { overflow: auto; font-size: 18px;
-  color: #aaa; border: none; background: #444; border-bottom: 1px solid #fff;
-  padding: 0 0; }
-#olinstar, #olinstar li { display: block; margin: 0; padding: 0; list-style: none; }
-#olinstar { overflow: auto; max-width: 700px; margin: 0 auto; }
-#olinstar a { text-decoration: none; color: inherit; padding: 10px; display: block; }
-#olinstar a:hover { color: white; background: #555; }
-#olinstar li { float: left; width: 25%; text-align: center; }
-#olinstar b { font-weight: normal; }
-#olinstar .apps b { color: #C26;}
-#olinstar .students b { color: #3AC;}
-#olinstar .clubs b { color: #3CA;}
-#olinstar .projects b { color: #F90;}
-
-/*
  * page
  */
 
@@ -59,12 +42,12 @@ header { overflow: auto; font-size: 18px;
 #header.affix { width: 100%; margin: 0; top: 0; }
 #header.affix #header-inner { margin-right: 20px; }
 
-@media all and (min-width: 500px) {
+@media all and (min-width: 768px) {
   header { margin-bottom: 90px;}
-  #header { margin-top: -90px; margin-bottom: 20px; }
+  #header { margin-top: -18px; margin-bottom: 20px; }
 }
-@media all and (max-width: 499px) { 
-  #header { height: auto; min-height: 55px; }
+@media all and (max-width: 767px) { 
+  #header { height: auto; min-height: 55px; margin-bottom: 20px; }
   #header h1 { font-size: 24px; }
   #header-controls { display: none; }
 }
@@ -88,8 +71,8 @@ if (isMobile && !location.hash) {
 
 <body>
 
-    <header>
-      <ul id="olinstar">
+    <header class="olinstar">
+      <ul>
         <li class="apps"><a href="//olinapps.com/">olin<b>apps</b>.com</a></li>
         <li class="students"><a href="//olinstudents.com/">olin<b>students</b>.com</a></li>
         <li class="clubs"><a href="//olinclubs.com/">olin<b>clubs</b>.com</a></li>
